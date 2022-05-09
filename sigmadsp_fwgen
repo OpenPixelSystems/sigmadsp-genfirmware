@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 import sys
 import binascii
- 
+
 class SigmadDSPFirmwareGen(object):
 
 	CHUNK_TYPE_DATA = 0
@@ -59,7 +59,7 @@ class SigmadDSPFirmwareGen(object):
 
 	def parse_input_file(self, filename, samplerate_mask, samplerate):
 		tree = ET.parse(filename)
-	
+
 		for child in tree.getroot().iter("Program"):
 			name = child.find("Name").text
 			if name != "Program Data":
@@ -108,7 +108,7 @@ class SigmadDSPFirmwareGen(object):
 
 		self.write_chunk_header(size, self.CHUNK_TYPE_DATA, samplerate_mask)
 		self.write(struct.pack("<H", addr))
-		self.write(data)	
+		self.write(data)
 
 	def add_control_chunk(self, node, name, samplerate_mask):
 		pname = node.find("Name").text
