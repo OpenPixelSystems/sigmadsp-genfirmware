@@ -121,7 +121,7 @@ class SigmadDSPFirmwareGen(object):
 		name, pname, addr, length, samplerate_mask = control_chunk
 		ok = True
 
-		full_name = "%s %s" % (name, pname)
+		full_name = "%s" % (pname)
 		if len(full_name) > 43:
 			print("ERROR: Control name '%s' is to long. Maximum length is 43 characters" % full_name)
 			ok = False
@@ -146,7 +146,7 @@ class SigmadDSPFirmwareGen(object):
 
 		for chunk in self.control_chunks:
 			name, pname, addr, length, samplerate_mask = chunk
-			full_name = "%s %s" % (name, pname)
+			full_name = "%s" % (pname)
 			if full_name in new_chunks.keys():
 				other_addr, other_length, other_samplerate_mask = new_chunks[full_name][2:5]
 				if (other_addr != addr or other_length != length) and \
@@ -166,12 +166,12 @@ class SigmadDSPFirmwareGen(object):
 	def write_control_chunk(self, control_chunk):
 		name, pname, addr, length, samplerate_mask = control_chunk
 
-		name_len = len("%s %s" % (name, pname))
+		name_len = len("%s" % (pname))
 		size = self.CHUNK_CONTROL_HEADER_SIZE + name_len
 
 		self.write_chunk_header(size, self.CHUNK_TYPE_CONTROL, samplerate_mask)
 		self.write(struct.pack("<HHH", 0, addr, length))
-		self.write(bytearray("%s %s" % (name, pname), "ascii"))
+		self.write(bytearray("%s" % (pname), "ascii"))
 
 	def write_samplerates_chunk(self, samplerates):
 		size = self.CHUNK_HEADER_SIZE + len(samplerates) * 4
