@@ -11,6 +11,7 @@ class SigmadDSPFirmwareGen(object):
 	CHUNK_TYPE_DATA = 0
 	CHUNK_TYPE_CONTROL = 1
 	CHUNK_TYPE_SAMPLERATES = 2
+	CHUNK_TYPE_REGISTER = 3
 
 	CHUNK_HEADER_SIZE = 12
 	CHUNK_DATA_HEADER_SIZE = CHUNK_HEADER_SIZE + 2
@@ -23,6 +24,7 @@ class SigmadDSPFirmwareGen(object):
 		self.data_chunks = []
 		self.control_chunks = []
 		self.controls = {}
+		self.register_chunks = []
 
 		samplerates = []
 		samplerate_mask = 1
@@ -50,6 +52,8 @@ class SigmadDSPFirmwareGen(object):
 			self.write_data_chunk(chunk)
 		for chunk in self.control_chunks:
 			self.write_control_chunk(chunk)
+		for chunk in self.register_chunks:
+			self.write_register_chunk(chunk)
 
 		self.out.seek(8)
 		# binascii.crc32() inverts the bits interally here we intert it back
@@ -71,9 +75,15 @@ class SigmadDSPFirmwareGen(object):
 			if name == "Non Modulo RAM":
 				print("WARNING: Non modulo RAM currently not supported. Design might not work correctly.")
 				continue
-			if name != "Param":
+
+			# Skip safeload address
+			if "__SafeLoad_Module__" in name:
 				continue
-			self.add_data_chunk(child, samplerate_mask)
+
+			if name == "Param":
+				self.add_data_chunk(child, samplerate_mask)
+			else:
+				self.add_register_chunk(child, samplerate_mask)
 
 		for child in tree.getroot().iter("Module"):
 			name = child.find("CellName").text
@@ -91,6 +101,24 @@ class SigmadDSPFirmwareGen(object):
 		for i in range(0, padding):
 			self.write(b"\xaa")
 		self.write(struct.pack("<III", size, type, samplerate_mask))
+
+	def add_register_chunk(self, node, samplerate_mask):
+		addr = int(node.find("Address").text, 0)
+		size = int(node.find("Size").text)
+
+		data = node.find("Data").text
+		data = bytes([int(x.strip(), 16) for x in data.split(",") if x.strip()])
+
+		self.register_chunks.append((addr, size, data, samplerate_mask))
+
+	def write_register_chunk(self, data_chunk):
+		addr, size, data, samplerate_mask = data_chunk
+
+		size += self.CHUNK_DATA_HEADER_SIZE
+
+		self.write_chunk_header(size, self.CHUNK_TYPE_REGISTER, samplerate_mask)
+		self.write(struct.pack("<H", addr))
+		self.write(data)
 
 	def add_data_chunk(self, node, samplerate_mask):
 		addr = int(node.find("Address").text, 0)
