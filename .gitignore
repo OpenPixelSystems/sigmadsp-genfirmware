@@ -1,2 +1,4 @@
 gen_firmware
 read_firmware
+*.bin
+*.swp
